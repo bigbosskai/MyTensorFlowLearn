@@ -1,2 +1,6 @@
 # MyTensorFlowLearn
-我自己写的tensorflow代码
+#Author:bosskai
+#Time:2018年1月20日20:09:10
+it my tensorflow code for NeuralNetwork
+
+
