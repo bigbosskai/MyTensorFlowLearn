@@ -1,0 +1,702 @@
+@@普普通通的dnn
+import tensorflow as tf 
+from tensorflow.examples.tutorials.mnist import input_data 
+mnist=input_data.read_data_sets('MNIST_data',one_hot=True)
+batch_size=100
+n_batch=mnist.train.num_examples // batch_size
+x=tf.placeholder(tf.float32,[None,784])
+y=tf.placeholder(tf.float32,[None,10])
+keep_prob=tf.placeholder(tf.float32)
+lr=tf.Variable(0.001,dtype=tf.float32)
+
+W1=tf.Variable(tf.truncated_normal([784,500],stddev=0.1))
+b1=tf.Variable(tf.zeros([500])+0.1)
+L1=tf.nn.tanh(tf.matmul(x,W1)+b1)
+L1_drop=tf.nn.dropout(L1,keep_prob)
+
+W2=tf.Variable(tf.truncated_normal([500,300],stddev=0.1))
+b2=tf.Variable(tf.zeros([300])+0.1)
+L2=tf.nn.tanh(tf.matmul(L1_drop,W2)+b2)
+L2_drop=tf.nn.dropout(L2,keep_prob)
+
+W3=tf.Variable(tf.truncated_normal([300,10],stddev=0.1))
+b3=tf.Variable(tf.zeros([10])+0.1)
+prediction=tf.nn.softmax(tf.matmul(L2_drop,W3)+b3)
+scewl=tf.nn.softmax_cross_entropy_with_logits(labels=y,logits=prediction)
+loss = tf.reduce_mean(scewl)
+train_step = tf.train.AdamOptimizer(lr).minimize(loss)
+init=tf.global_variables_initializer()
+correct_prediction = tf.equal(tf.argmax(y,1),tf.argmax(prediction,1))
+accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
+
+with tf.Session() as sess:
+    sess.run(init)
+    print(scewl.get_shape())
+    for epoch in range(51):
+        sess.run(tf.assign(lr,0.001*(0.95**epoch)))
+        for batch in range(n_batch):
+            batch_xs,batch_ys =  mnist.train.next_batch(batch_size)
+            sess.run(train_step,feed_dict={x:batch_xs,y:batch_ys,keep_prob:1.0})
+        learning_rate = sess.run(lr)
+        acc = sess.run(accuracy,feed_dict={x:mnist.test.images,y:mnist.test.labels,keep_prob:1.0})
+        print ("Iter " + str(epoch) + ", Testing Accuracy= " + str(acc) + ", Learning Rate= " + str(learning_rate))
+    print("end")
+
+"""
+Iter 0, Testing Accuracy= 0.9447, Learning Rate= 0.001
+Iter 1, Testing Accuracy= 0.9608, Learning Rate= 0.00095
+Iter 2, Testing Accuracy= 0.9692, Learning Rate= 0.0009025
+Iter 3, Testing Accuracy= 0.973, Learning Rate= 0.000857375
+Iter 4, Testing Accuracy= 0.9732, Learning Rate= 0.000814506
+Iter 5, Testing Accuracy= 0.9759, Learning Rate= 0.000773781
+Iter 6, Testing Accuracy= 0.9758, Learning Rate= 0.000735092
+Iter 7, Testing Accuracy= 0.9764, Learning Rate= 0.000698337
+Iter 8, Testing Accuracy= 0.975, Learning Rate= 0.00066342
+Iter 9, Testing Accuracy= 0.9769, Learning Rate= 0.000630249
+Iter 10, Testing Accuracy= 0.977, Learning Rate= 0.000598737
+Iter 11, Testing Accuracy= 0.9787, Learning Rate= 0.0005688
+Iter 12, Testing Accuracy= 0.9787, Learning Rate= 0.00054036
+Iter 13, Testing Accuracy= 0.9803, Learning Rate= 0.000513342
+Iter 14, Testing Accuracy= 0.9792, Learning Rate= 0.000487675
+Iter 15, Testing Accuracy= 0.9818, Learning Rate= 0.000463291
+Iter 16, Testing Accuracy= 0.9805, Learning Rate= 0.000440127
+Iter 17, Testing Accuracy= 0.9795, Learning Rate= 0.00041812
+Iter 18, Testing Accuracy= 0.9829, Learning Rate= 0.000397214
+Iter 19, Testing Accuracy= 0.978, Learning Rate= 0.000377354
+Iter 20, Testing Accuracy= 0.9798, Learning Rate= 0.000358486
+
+"""
+"""
+keep_prob:0.5
+效果没有上面的好
+"""
+
+@@全连接层中使用dropout
+
+# coding: utf-8
+import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
+
+#载入数据集
+mnist = input_data.read_data_sets("MNIST_data",one_hot=True)
+
+#每个批次的大小
+batch_size = 100
+#计算一共有多少个批次
+n_batch = mnist.train.num_examples // batch_size
+
+#定义两个placeholder
+x = tf.placeholder(tf.float32,[None,784])
+y = tf.placeholder(tf.float32,[None,10])
+keep_prob=tf.placeholder(tf.float32)
+
+#创建一个简单的神经网络
+W1=tf.Variable(tf.truncated_normal([784,2000],stddev=0.1))
+b1=tf.Variable(tf.zeros([2000])+0.1)
+L1=tf.nn.tanh(tf.matmul(x,W1)+b1)
+L1_drop=tf.nn.dropout(L1,keep_prob)
+
+
+W2=tf.Variable(tf.truncated_normal([2000,2000],stddev=0.1))
+b2=tf.Variable(tf.zeros([2000])+0.1)
+L2=tf.nn.tanh(tf.matmul(L1_drop,W2)+b2)
+L2_drop=tf.nn.dropout(L2,keep_prob)
+
+W3=tf.Variable(tf.truncated_normal([2000,1000],stddev=0.1))
+b3=tf.Variable(tf.zeros([1000])+0.1)
+L3=tf.nn.tanh(tf.matmul(L2_drop,W3)+b3)
+L3_drop=tf.nn.dropout(L3,keep_prob)
+
+W4=tf.Variable(tf.truncated_normal([1000,10],stddev=0.1))
+b4=tf.Variable(tf.zeros([10])+0.1)
+prediction=tf.nn.softmax(tf.matmul(L3_drop,W4)+b4)
+
+loss=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y,logits=prediction))
+train_step = tf.train.GradientDescentOptimizer(0.2).minimize(loss)
+init=tf.global_variables_initializer()
+
+#结果存放在一个布尔型列表中
+correct_prediction = tf.equal(tf.argmax(y,1),tf.argmax(prediction,1))#argmax返回一维张量中最大的值所在的位置
+#求准确率
+accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
+
+
+with tf.Session() as sess:
+    sess.run(init)
+    for epoch in range(121):
+        for batch in range(n_batch):
+            batch_xs,batch_ys =  mnist.train.next_batch(batch_size)
+            sess.run(train_step,feed_dict={x:batch_xs,y:batch_ys,keep_prob:1.0})
+        
+        testacc = sess.run(accuracy,feed_dict={x:mnist.test.images,y:mnist.test.labels})
+        trainacc= sess.run(accuracy,feed_dict={x:mnist.train.images,y:mnist.train.labels})
+        print("Iter " + str(epoch) + ",Testing Accuracy " + str(testacc)+", Training Accuracy "+str(trainacc))
+
+
+
+@@基本dnn训练mnist参数在tensorboard中的显示
+import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
+
+#载入数据集
+mnist = input_data.read_data_sets("MNIST_data",one_hot=True)
+
+#每个批次的大小
+batch_size = 100
+#计算一共有多少个批次
+n_batch = mnist.train.num_examples // batch_size
+
+#参数概要
+def variable_summaries(var):
+    with tf.name_scope('summaries'):
+        mean = tf.reduce_mean(var)
+        tf.summary.scalar('mean', mean)#平均值
+        with tf.name_scope('stddev'):
+            stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+        tf.summary.scalar('stddev', stddev)#标准差
+        tf.summary.scalar('max', tf.reduce_max(var))#最大值
+        tf.summary.scalar('min', tf.reduce_min(var))#最小值
+        tf.summary.histogram('histogram', var)#直方图
+
+#命名空间
+with tf.name_scope('input'):
+    #定义两个placeholder
+    x = tf.placeholder(tf.float32,[None,784],name='x-input')
+    y = tf.placeholder(tf.float32,[None,10],name='y-input')
+    
+with tf.name_scope('layer'):
+    #创建一个简单的神经网络
+    with tf.name_scope('wights'):
+        W = tf.Variable(tf.zeros([784,10]),name='W')
+        variable_summaries(W)
+    with tf.name_scope('biases'):    
+        b = tf.Variable(tf.zeros([10]),name='b')
+        variable_summaries(b)
+    with tf.name_scope('wx_plus_b'):
+        wx_plus_b = tf.matmul(x,W) + b
+    with tf.name_scope('softmax'):
+        prediction = tf.nn.softmax(wx_plus_b)
+
+#二次代价函数
+# loss = tf.reduce_mean(tf.square(y-prediction))
+with tf.name_scope('loss'):
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y,logits=prediction))
+    tf.summary.scalar('loss',loss)
+with tf.name_scope('train'):
+    #使用梯度下降法
+    train_step = tf.train.GradientDescentOptimizer(0.2).minimize(loss)
+
+#初始化变量
+init = tf.global_variables_initializer()
+
+with tf.name_scope('accuracy'):
+    with tf.name_scope('correct_prediction'):
+        #结果存放在一个布尔型列表中
+        correct_prediction = tf.equal(tf.argmax(y,1),tf.argmax(prediction,1))#argmax返回一维张量中最大的值所在的位置
+    with tf.name_scope('accuracy'):
+        #求准确率
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
+        tf.summary.scalar('accuracy',accuracy)
+        
+#合并所有的summary
+merged = tf.summary.merge_all()
+
+with tf.Session() as sess:
+    sess.run(init)
+    writer = tf.summary.FileWriter('logs/',sess.graph)
+    for epoch in range(51):
+        for batch in range(n_batch):
+            batch_xs,batch_ys =  mnist.train.next_batch(batch_size)
+            summary,_ = sess.run([merged,train_step],feed_dict={x:batch_xs,y:batch_ys})
+            
+        writer.add_summary(summary,epoch)
+        acc = sess.run(accuracy,feed_dict={x:mnist.test.images,y:mnist.test.labels})
+        print("Iter " + str(epoch) + ",Testing Accuracy " + str(acc))
+
+# for i in range(2001):
+#     #m每个批次100个样本
+#     batch_xs,batch_ys = mnist.train.next_batch(100)
+#     summary,_ = sess.run([merged,train_step],feed_dict={x:batch_xs,y:batch_ys})
+#     writer.add_summary(summary,i)
+#     if i%500 == 0:
+#         print(sess.run(accuracy,feed_dict={x:mnist.test.images,y:mnist.test.labels}))
+
+
+@@基本cnn训练mnist数据集
+import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
+mnist = input_data.read_data_sets("MNIST_data",one_hot=True)
+batch_size=20
+n_batch = mnist.train.num_examples // batch_size
+def weight_variable(shape):
+	initial=tf.truncated_normal(shape,stddev=0.1)
+	return tf.Variable(initial)
+
+def bias_variable(shape):
+	initial=tf.constant(0.1,shape=shape)
+	return tf.Variable(initial)
+
+def conv2d(x,W):
+	  #x input tensor of shape[batch,in_height,in_width,in_channels]
+	  #strides[0]=strides[3]=1
+	  return tf.nn.conv2d(x,W,strides=[1,1,1,1],padding='SAME')
+
+
+def max_pool_2x2(x):
+	return tf.nn.max_pool(x,ksize=[1,2,2,1],strides=[1,2,2,1],padding='SAME')
+
+x=tf.placeholder(tf.float32,[None,784])
+y=tf.placeholder(tf.float32,[None,10])
+
+#改变x的格式转为4D向量[batch,in_height,in_width,in_channels]
+x_image=tf.reshape(x,[-1,28,28,1])
+
+
+#初始化第一个卷积的权值和偏执
+W_conv1=weight_variable([5,5,1,32])
+b_conv1=bias_variable([32])#每一个卷积核设置一个片纸质
+
+h_conv1=tf.nn.relu(conv2d(x_image,W_conv1)+b_conv1)
+#此时h_conv1的形状是[?,28,28,32]
+h_pool1=max_pool_2x2(h_conv1)
+#此时这个h_pool1的形状是[?,14,14,32]
+
+print(h_pool1.get_shape())
+
+W_conv2=weight_variable([5,5,32,64])
+b_conv2=bias_variable([64])
+
+h_conv2=tf.nn.relu(conv2d(h_pool1,W_conv2)+b_conv2)
+#此时形状是[?,14,14,64]
+h_pool2=max_pool_2x2(h_conv2)
+#此时形状是[?,7,7,64]
+print(h_pool2.get_shape())
+
+#初始化第一个全连接层
+W_fc1=weight_variable([7*7*64,1024])
+b_fc1=bias_variable([1024])
+
+h_pool2_flat=tf.reshape(h_pool2,[-1,7*7*64])
+#扁平化处理
+h_fc1=tf.nn.relu(tf.matmul(h_pool2_flat,W_fc1)+b_fc1)
+
+#keep_prob用来表示神经元的输出概率
+keep_prob=tf.placeholder(tf.float32)
+h_fc_drop=tf.nn.dropout(h_fc1,keep_prob)
+
+#初始化第二个全连接层
+W_fc2=weight_variable([1024,10])
+b_fc2=bias_variable([10])
+#计算输出
+prediction=tf.nn.softmax(tf.matmul(h_fc_drop,W_fc2)+b_fc2)
+softmaxc=tf.nn.softmax_cross_entropy_with_logits(labels=y,logits=prediction)
+# print(scew1.get_shape())
+# print(softmaxc.get_shape())
+loss=tf.reduce_mean(softmaxc)
+
+train_step=tf.train.GradientDescentOptimizer(0.02).minimize(loss)
+
+correct_predict=tf.equal( tf.argmax(prediction,1), tf.argmax(y,1))
+
+accuracy=tf.reduce_mean( tf.cast(correct_predict, tf.float32) )
+
+init=tf.global_variables_initializer()
+
+with tf.Session() as sess:
+	sess.run(init)
+	for epoch in range(21):
+		for batch in range(n_batch):
+			batch_xs,batch_ys=mnist.train.next_batch(batch_size)
+			sess.run(train_step,feed_dict={x:batch_xs,y:batch_ys,keep_prob:0.7})
+		acc=sess.run(accuracy,feed_dict={x:mnist.test.images,y:mnist.test.labels,keep_prob:1.0})
+		print("Iter"+str(epoch) +'TestAcc: '+str(acc))
+	print("test is ok")
+
+
+@@基本cnn训练mnist参数在tensorboard中的显示
+
+# coding: utf-8
+
+import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
+
+
+
+mnist = input_data.read_data_sets('MNIST_data',one_hot=True)
+
+#每个批次的大小
+batch_size = 100
+#计算一共有多少个批次
+n_batch = mnist.train.num_examples // batch_size
+
+#参数概要
+def variable_summaries(var):
+    with tf.name_scope('summaries'):
+        mean = tf.reduce_mean(var)
+        tf.summary.scalar('mean', mean)#平均值
+        with tf.name_scope('stddev'):
+            stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+        tf.summary.scalar('stddev', stddev)#标准差
+        tf.summary.scalar('max', tf.reduce_max(var))#最大值
+        tf.summary.scalar('min', tf.reduce_min(var))#最小值
+        tf.summary.histogram('histogram', var)#直方图
+
+#初始化权值
+def weight_variable(shape,name):
+    initial = tf.truncated_normal(shape,stddev=0.1)#生成一个截断的正态分布
+    return tf.Variable(initial,name=name)
+
+#初始化偏置
+def bias_variable(shape,name):
+    initial = tf.constant(0.1,shape=shape)
+    return tf.Variable(initial,name=name)
+
+#卷积层
+def conv2d(x,W):
+    #x input tensor of shape `[batch, in_height, in_width, in_channels]`
+    #W filter / kernel tensor of shape [filter_height, filter_width, in_channels, out_channels]
+    #`strides[0] = strides[3] = 1`. strides[1]代表x方向的步长，strides[2]代表y方向的步长
+    #padding: A `string` from: `"SAME", "VALID"`
+    return tf.nn.conv2d(x,W,strides=[1,1,1,1],padding='SAME')
+
+#池化层
+def max_pool_2x2(x):
+    #ksize [1,x,y,1]
+    return tf.nn.max_pool(x,ksize=[1,2,2,1],strides=[1,2,2,1],padding='SAME')
+
+#命名空间
+with tf.name_scope('input'):
+    #定义两个placeholder
+    x = tf.placeholder(tf.float32,[None,784],name='x-input')
+    y = tf.placeholder(tf.float32,[None,10],name='y-input')
+    with tf.name_scope('x_image'):
+        #改变x的格式转为4D的向量[batch, in_height, in_width, in_channels]`
+        x_image = tf.reshape(x,[-1,28,28,1],name='x_image')
+
+
+with tf.name_scope('Conv1'):
+    #初始化第一个卷积层的权值和偏置
+    with tf.name_scope('W_conv1'):
+        W_conv1 = weight_variable([5,5,1,32],name='W_conv1')#5*5的采样窗口，32个卷积核从1个平面抽取特征
+    with tf.name_scope('b_conv1'):  
+        b_conv1 = bias_variable([32],name='b_conv1')#每一个卷积核一个偏置值
+
+    #把x_image和权值向量进行卷积，再加上偏置值，然后应用于relu激活函数
+    with tf.name_scope('conv2d_1'):
+        conv2d_1 = conv2d(x_image,W_conv1) + b_conv1
+    with tf.name_scope('relu'):
+        h_conv1 = tf.nn.relu(conv2d_1)
+    with tf.name_scope('h_pool1'):
+        h_pool1 = max_pool_2x2(h_conv1)#进行max-pooling
+
+with tf.name_scope('Conv2'):
+    #初始化第二个卷积层的权值和偏置
+    with tf.name_scope('W_conv2'):
+        W_conv2 = weight_variable([5,5,32,64],name='W_conv2')#5*5的采样窗口，64个卷积核从32个平面抽取特征
+    with tf.name_scope('b_conv2'):  
+        b_conv2 = bias_variable([64],name='b_conv2')#每一个卷积核一个偏置值
+
+    #把h_pool1和权值向量进行卷积，再加上偏置值，然后应用于relu激活函数
+    with tf.name_scope('conv2d_2'):
+        conv2d_2 = conv2d(h_pool1,W_conv2) + b_conv2
+    with tf.name_scope('relu'):
+        h_conv2 = tf.nn.relu(conv2d_2)
+    with tf.name_scope('h_pool2'):
+        h_pool2 = max_pool_2x2(h_conv2)#进行max-pooling
+
+#28*28的图片第一次卷积后还是28*28，第一次池化后变为14*14
+#第二次卷积后为14*14，第二次池化后变为了7*7
+#进过上面操作后得到64张7*7的平面
+
+with tf.name_scope('fc1'):
+    #初始化第一个全连接层的权值
+    with tf.name_scope('W_fc1'):
+        W_fc1 = weight_variable([7*7*64,1024],name='W_fc1')#上一场有7*7*64个神经元，全连接层有1024个神经元
+    with tf.name_scope('b_fc1'):
+        b_fc1 = bias_variable([1024],name='b_fc1')#1024个节点
+
+    #把池化层2的输出扁平化为1维
+    with tf.name_scope('h_pool2_flat'):
+        h_pool2_flat = tf.reshape(h_pool2,[-1,7*7*64],name='h_pool2_flat')
+    #求第一个全连接层的输出
+    with tf.name_scope('wx_plus_b1'):
+        wx_plus_b1 = tf.matmul(h_pool2_flat,W_fc1) + b_fc1
+    with tf.name_scope('relu'):
+        h_fc1 = tf.nn.relu(wx_plus_b1)
+
+    #keep_prob用来表示神经元的输出概率
+    with tf.name_scope('keep_prob'):
+        keep_prob = tf.placeholder(tf.float32,name='keep_prob')
+    with tf.name_scope('h_fc1_drop'):
+        h_fc1_drop = tf.nn.dropout(h_fc1,keep_prob,name='h_fc1_drop')
+
+with tf.name_scope('fc2'):
+    #初始化第二个全连接层
+    with tf.name_scope('W_fc2'):
+        W_fc2 = weight_variable([1024,10],name='W_fc2')
+    with tf.name_scope('b_fc2'):    
+        b_fc2 = bias_variable([10],name='b_fc2')
+    with tf.name_scope('wx_plus_b2'):
+        wx_plus_b2 = tf.matmul(h_fc1_drop,W_fc2) + b_fc2
+    with tf.name_scope('softmax'):
+        #计算输出
+        prediction = tf.nn.softmax(wx_plus_b2)
+
+#交叉熵代价函数
+with tf.name_scope('cross_entropy'):
+    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y,logits=prediction),name='cross_entropy')
+    tf.summary.scalar('cross_entropy',cross_entropy)
+    
+#使用AdamOptimizer进行优化
+with tf.name_scope('train'):
+    train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+
+#求准确率
+with tf.name_scope('accuracy'):
+    with tf.name_scope('correct_prediction'):
+        #结果存放在一个布尔列表中
+        correct_prediction = tf.equal(tf.argmax(prediction,1),tf.argmax(y,1))#argmax返回一维张量中最大的值所在的位置
+    with tf.name_scope('accuracy'):
+        #求准确率
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
+        tf.summary.scalar('accuracy',accuracy)
+        
+#合并所有的summary
+merged = tf.summary.merge_all()
+
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    train_writer = tf.summary.FileWriter('logs/train',sess.graph)
+    test_writer = tf.summary.FileWriter('logs/test',sess.graph)
+    for i in range(1001):
+        #训练模型
+        batch_xs,batch_ys =  mnist.train.next_batch(batch_size)
+        sess.run(train_step,feed_dict={x:batch_xs,y:batch_ys,keep_prob:0.5})
+        #记录训练集计算的参数
+        summary = sess.run(merged,feed_dict={x:batch_xs,y:batch_ys,keep_prob:1.0})
+        train_writer.add_summary(summary,i)
+        #记录测试集计算的参数
+        batch_xs,batch_ys =  mnist.test.next_batch(batch_size)
+        summary = sess.run(merged,feed_dict={x:batch_xs,y:batch_ys,keep_prob:1.0})
+        test_writer.add_summary(summary,i)
+    
+        if i%100==0:
+            test_acc = sess.run(accuracy,feed_dict={x:mnist.test.images,y:mnist.test.labels,keep_prob:1.0})
+            train_acc = sess.run(accuracy,feed_dict={x:mnist.train.images[:10000],y:mnist.train.labels[:10000],keep_prob:1.0})
+            print ("Iter " + str(i) + ", Testing Accuracy= " + str(test_acc) + ", Training Accuracy= " + str(train_acc))
+
+
+
+
+@@基本rnn训练mnist数据集
+
+import tensorflow as tf 
+from tensorflow.examples.tutorials.mnist import input_data
+
+mnist=input_data.read_data_sets("MNIST_data/",one_hot=True)
+
+#输入的图片是28*28
+n_inputs=28 #输入一行，一行有28个数据
+max_time=28 #一共有28行
+lstm_size=100 #隐层单元
+
+# 每一次输入图片的一行，总共输入28次（每一行相当于一个时间点，所以要输入28次）
+
+n_classes=10
+batch_size=50
+n_batch=mnist.train.num_examples // batch_size
+
+x=tf.placeholder(tf.float32,[None,784])
+
+y=tf.placeholder(tf.float32,[None,10])
+
+#初始化权重
+weights=tf.Variable(tf.truncated_normal( [lstm_size,n_classes], stddev=0.1))
+#[100，,10]
+
+
+#初始化偏执
+biases=tf.Variable(tf.constant(0.1,shape=[n_classes]))
+# [10]
+
+# 定义RNN网络
+def RNN(X,weights,biases):
+	"""
+		每一行是一个时间点
+		inputs:[batch_size,max_time,n_input]
+	"""
+	inputs=tf.reshape(X,[-1,max_time,n_inputs])
+	# 定义LSTM基本cell
+	lstm_cell=tf.contrib.rnn.core_rnn_cell.BasicLSTMCell(lstm_size)
+	# final_state[0]是cell_state
+	# final_state[1]hidden_state
+
+	#下面相当于是一个计算
+	outputs,final_state=tf.nn.dynamic_rnn(lstm_cell,inputs,dtype=tf.float32)
+	results=tf.nn.softmax(tf.matmul(final_state[1],weights)+biases)
+	return results
+  
+prediction=RNN(x,weights,biases)
+#cross_entropy
+cross_entropy=tf.reduce_mean( tf.nn.softmax_cross_entropy_with_logits(logits=prediction,labels=y) )
+
+train_step=tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+
+correct_prediction=tf.equal( tf.argmax(prediction,1), tf.argmax(y,1) )
+
+accuracy=tf.reduce_mean( tf.cast( correct_prediction ,tf.float32 ))
+
+init=tf.global_variables_initializer()
+
+with tf.Session() as sess:
+	sess.run(init)
+	for epoch in range(6):
+		for batch in range(n_batch):
+			batch_xs,batch_ys=mnist.train.next_batch(batch_size)
+			sess.run(train_step,feed_dict={x:batch_xs,y:batch_ys})
+		acc=sess.run(accuracy,feed_dict={x:mnist.test.images,y:mnist.test.labels})
+		print("Iter "+str(epoch)+" Accuracy: "+str(acc))
+
+"""
+Iter 0 Accuracy: 0.7267
+Iter 1 Accuracy: 0.8685
+Iter 2 Accuracy: 0.9046
+Iter 3 Accuracy: 0.9156
+Iter 4 Accuracy: 0.928
+Iter 5 Accuracy: 0.9354
+"""
+
+
+@@tensorflow模型的保存
+import tensorflow as tf 
+from tensorflow.examples.tutorials.mnist import input_data
+
+mnist=input_data.read_data_sets("MNIST_data",one_hot=True) 
+
+batch_size=100
+n_batch=mnist.train.num_examples//batch_size
+
+x=tf.placeholder(tf.float32,[None,784])
+y=tf.placeholder(tf.float32,[None,10])
+
+W=tf.Variable(tf.zeros([784,10]))
+b=tf.Variable(tf.zeros([10]))
+
+prediction=tf.nn.softmax(tf.matmul(x,W)+b)
+
+loss=tf.reduce_mean( tf.nn.softmax_cross_entropy_with_logits(labels=y,logits=prediction) )
+
+train_step=tf.train.GradientDescentOptimizer(0.2).minimize(loss)
+
+init=tf.global_variables_initializer()
+
+correct_prediction=tf.equal( tf.argmax(prediction,1), tf.argmax(y,1))
+accuracy=tf.reduce_mean( tf.cast(correct_prediction,tf.float32))
+
+saver=tf.train.Saver()
+
+with tf.Session() as sess:
+	sess.run(init)
+	for epoch in range(20):
+		for j in range(n_batch):
+			batch_xs,batch_ys=mnist.train.next_batch(batch_size)
+			sess.run(train_step,feed_dict={x:batch_xs,y:batch_ys})
+		acc=sess.run(accuracy,feed_dict={x:mnist.test.images,y:mnist.test.labels})
+		print("Iter "+str(epoch)+" Accuracy: "+str(acc))
+		#模型保存
+		saver.save(sess,"netmodel/my_net.ckpt")
+
+
+@@tensorflow模型的载入
+import tensorflow as tf 
+from tensorflow.examples.tutorials.mnist import input_data
+
+mnist=input_data.read_data_sets("MNIST_data",one_hot=True) 
+
+batch_size=100
+n_batch=mnist.train.num_examples//batch_size
+
+x=tf.placeholder(tf.float32,[None,784])
+y=tf.placeholder(tf.float32,[None,10])
+
+W=tf.Variable(tf.zeros([784,10]))
+b=tf.Variable(tf.zeros([10]))
+
+prediction=tf.nn.softmax(tf.matmul(x,W)+b)
+
+loss=tf.reduce_mean( tf.nn.softmax_cross_entropy_with_logits(labels=y,logits=prediction) )
+
+train_step=tf.train.GradientDescentOptimizer(0.2).minimize(loss)
+
+init=tf.global_variables_initializer()
+
+correct_prediction=tf.equal( tf.argmax(prediction,1), tf.argmax(y,1))
+accuracy=tf.reduce_mean( tf.cast(correct_prediction,tf.float32))
+
+saver=tf.train.Saver()
+
+with tf.Session() as sess:
+	sess.run(init)
+	print(sess.run(accuracy,feed_dict={x:mnist.test.images,y:mnist.test.labels}))#0.09
+	saver.restore(sess,"netmodel/my_net.ckpt")
+	print(sess.run(accuracy,feed_dict={x:mnist.test.images,y:mnist.test.labels}))#0.9208
+
+
+@@使用tensorflow.gfile.FastGFile读取图片
+import tensorflow as tf 
+image_jpg=tf.gfile.FastGFile("1.jpg","rb").read()
+image_png=tf.gfile.FastGFile("2.png","rb").read()
+
+with tf.Session() as sess:
+	print(image_jpg)
+	image_jpg=tf.image.decode_jpeg(image_jpg) #图像解码
+	print(sess.run(image_jpg))#打印解码后的图像（即为一个三维矩阵[w,h,3]）
+	mage_jpg = tf.image.convert_image_dtype(image_jpg,dtype=tf.uint8) #改变图像数据类型  
+	print(sess.run(mage_jpg))
+
+	print(type(image_jpg))
+	print(mage_jpg.get_shape())
+
+	image_png = tf.image.decode_png(image_png) 
+    print(sess.run(image_jpg))
+    image_png = tf.image.convert_image_dtype(image_png,dtype=tf.uint8) 
+
+
+@@classify_image_graph_def.pb模型的加载
+f=tf.gfile.FastGFile("classify_image_graph_def.pb","rb")
+graph_def=tf.GraphDef()
+graph_def.ParseFromString(f.read())
+tf.import_graph_def(graph_def,name="")
+#当第一次加载模型的时候，需生成tensorboard的log文件
+writer=tf.summary.FileWriter(log_dir,sess.graph)
+writer.close()
+
+@@下面是可用的
+with tf.gfile.FastGFile('inception_model/classify_image_graph_def.pb', 'rb') as f:
+    graph_def = tf.GraphDef()
+    graph_def.ParseFromString(f.read())
+    tf.import_graph_def(graph_def, name='')
+
+
+
+@@保存模型的方法
+variables = tf.all_variables()
+saver = tf.train.Saver(variables)
+saver.save(sess, "data/data.ckpt")
+tf.train.write_graph(sess.graph_def, 'graph', 'model.ph', False)
+#模型和变量的分离
+
+
+@@sess.graph.get_tensor_by_name
+import tensorflow as tf 
+
+with tf.gfile.FastGFile('inception_model/classify_image_graph_def.pb', 'rb') as f:
+    graph_def = tf.GraphDef()
+    graph_def.ParseFromString(f.read())
+    tf.import_graph_def(graph_def, name='')
+
+with tf.Session() as sess:
+	softmax_tensor=sess.graph.get_tensor_by_name("softmax:0")#softmax的第0个输出
+	print(softmax_tensor)
+	print(tf.global_variables())
+	print(softmax_tensor.name)
